@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"
+    />
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+
+    <meta charset="UTF-8" />
+    <title>Chatbot</title>
+  </head>
+  <body>
+    <div class="header">
+        <h1>PiBot</h1>
+        <a href="/login" class="login-btn">Login</a>
+    </div>
+    <div class="nav">
+        <ul>
+            <li><a href="#">Beranda</a></li>
+            <li><a href="#">Tentang</a></li>
+            <li><a href="#">Kontak</a></li>
+        </ul>
+    </div>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 PiBot</p>
+    </div>
+
+    <div class="container">
+      <div class="chatbox">
+        <div class="chatbox__support">
+          <div class="chatbox__header">
+            <div class="chatbox__image--header">
+              <img width="48" height="48" src="https://img.icons8.com/color/48/communicate-skin-type-7.png" 
+                alt="communicate-skin-type-7"
+              />
+            </div>
+            <div class="chatbox__content--header">
+              
+              <p class="chatbox__description--header">
+                Hi. Nama saya PiBot, silakan tanyakan seputar Prodi Informatika.
+              </p>
+              <!-- Status admin -->
+              <p id="adminStatus" style="font-weight: bold; margin-top: 5px;"></p>
+            </div>
+          </div>
+          <div class="chatbox__messages">
+            <div class="messages__item messages__item--visitor">
+              <p>
+                Hai, ada yang bisa PiBot bantu? Silakan pilih pertanyaan:<br />
+                1. <a href="#" data-message="Apa itu Prodi Informatika Gunadarma?">Apa itu Prodi Informatika Gunadarma?</a><br />
+                2. <a href="#" data-message="Apa keunggulan Prodi Informatika Gunadarma?">Apa keunggulan Prodi Informatika Gunadarma?</a><br />
+                3. <a href="#" data-message="Apa tujuan Prodi Informatika?">Apa tujuan Prodi Informatika?</a><br />
+                4. <a href="#" data-message="Prospek kerja lulusan Informatika?">Prospek kerja lulusan Informatika?</a><br />
+                5. <a href="#" data-message="Kurikulum Prodi Informatika?">Kurikulum Prodi Informatika?</a><br />
+                6. <a href="#" data-message="Kontak Admin">Kontak Admin</a>
+              </p>
+            </div>
+          </div>
+
+          <div class="chatbox__footer">
+            <input type="text" placeholder="Silakan bertanya..." />
+            <button class="chatbox__send--footer send__button">Send</button>
+          </div>
+        </div>
+        <div class="chatbox__button">
+          <button>
+            <img
+              src="{{ url_for('static', filename='images/chatbox-icon.svg') }}"
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <script
+      type="text/javascript"
+      src="{{ url_for('static', filename='app.js') }}"
+    ></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+      const socket = io(); // koneksi ke backend
+
+      const chatboxMessages = document.querySelector(".chatbox__messages");
+      const inputField = document.querySelector(".chatbox__footer input");
+      const sendButton = document.querySelector(".chatbox__send--footer");
+
+      let isTalkingToAdmin = false;
+
+      // Fungsi cek apakah admin online (client-side)
+      function isAdminOnline() {
+          const now = new Date();
+          const hour = now.getHours(); // ambil jam lokal (0–23)
+
+          // Admin online jam 09.00 – 15.00
+          return hour >= 9 && hour < 15;
+      }
+    
+      // Update status admin di UI
+      function updateAdminStatus() {
+        const statusEl = document.getElementById("adminStatus");
+        if (isAdminOnline()) {
+          statusEl.innerText = "Admin Online ✅ (09.00 - 15.00)";
+          statusEl.style.color = "greenyellow";
+        } else {
+          statusEl.innerText = "Admin Offline ❌ (Senin - Jumat, pukul 09.00 - 15.00)";
+          statusEl.style.color = "red";
+        }
+      }
+    
+      setInterval(updateAdminStatus, 60000);
+      updateAdminStatus();
+    
+      sendButton.addEventListener("click", () => {
+        const message = inputField.value.trim();
+        if (message) {
+          // Jika user minta kontak admin, cek jam
+          if (message.toLowerCase().includes("kontak_admin")) {
+            if (!isAdminOnline()) {
+              alert("Admin sedang offline. Jam kerja: 09.00 - 15.00");
+              return;
+            }
+          }
+          sendMessage(message);
+          inputField.value = "";
+        }
+      });
+    
+      // ENTER untuk kirim
+      inputField.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          sendButton.click();
+        }
+      });
+    
+      // Terima balasan dari admin
+      socket.on("user_receive", function (data) {
+        displayMessage(data.message, 'bot');
+      });
+</script>
+
+  </body>
+</html>
